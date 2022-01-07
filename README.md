@@ -7,7 +7,6 @@ finished code can be found here: https://github.com/StephenGrider/GraphQLCasts
 - A REST-ful routing primer
 - On to GraphQL
   - setting it up with express
-  - schemas intro
   - writing a schema
   - root queries
   - resolving 
@@ -243,3 +242,58 @@ app.use('/graphql', graphqlHTTP({
 refreshing localhost:4000/graphql and you now get the graphiQL interface in the browser! 
 
 #### The GraphiQL Tool 
+
+A tool provided to us by the express-graphql library 
+on the left we can enter graphQL queries, press play, and see the results pop-up on the right. 
+"Docs" is a documentation explorer, automatically populated when we add more queries. 
+
+Writing the schema file is probably 50% of everything going on with graphQL. the other 50% is writing queries 
+
+on the left we added this: (it looks like javascript, but it is not)
+````js
+{
+	user(id: "23") {
+    id, 
+    firstName,
+    age
+  }
+}
+````
+the above code:
+- asks graphQL to look through users, with ID of 23
+- when thats found, we then ask for the id, firstName and age to be returned. 
+
+hit play, and it returns: 
+````json
+{
+  "data": {
+    "user": {
+      "id": "23",
+      "firstName": "Bill",
+      "age": 20
+    }
+  }
+}
+````
+
+What happens:
+- we're saying user with id of 23 - this is handled in schema.js by the rootQuery
+  - which has a user field that accepts args of string for the id. 
+- then in the rootQuery we're specifying we want to resolve the user with this id
+  - in the rootQuery resolve, it returns a raw javascript object. We didn't need to coerce it. That gets handled by graphQL. 
+- on the left we added id, firstName and age, meaning we only want those values to be returned
+  - if you remove the firstName, you will no longer get that back in the response. 
+    - this plays into one of the shortcomings of restful routing (over fetching data)
+
+if you try to find a user that doesn't exist, we get back 
+````json
+{
+  "data": {
+    "user": null
+  }
+}
+````
+if we don't pass an argument, i.e. no id, we'll get an error 
+
+
+#### A Realistic Data Source
