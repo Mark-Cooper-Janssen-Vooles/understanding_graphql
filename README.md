@@ -297,3 +297,14 @@ if we don't pass an argument, i.e. no id, we'll get an error
 
 
 #### A Realistic Data Source
+
+One approach: 
+- GraphiQL <---> Express/GraphQL server <---> dataStore
+
+Another approach used by big companies i.e. facebook:
+- GrapiQL <---> Express/GraphQL server <----> outside server #1 <---> database 
+                                       <----> outside API
+                                       <----> outside server #2 <---> database
+- we'll use json-server to do this 
+
+#### Async Resolve Functions
