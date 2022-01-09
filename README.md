@@ -219,6 +219,7 @@ const RootQuery = new GraphQLObjectType({
       args: { id: { type: GraphQLString }},
       resolve(parentValue, args) { 
         // lodash walks through list of users, and finds and returns the first user with an id or args.id
+        // must return the user object
         return _.find(users, { id: args.id });
       }
     }
@@ -308,3 +309,133 @@ Another approach used by big companies i.e. facebook:
 - we'll use json-server to do this 
 
 #### Async Resolve Functions
+
+all data fetching we'll do inside node is async in nature, so we'll nearly always need return a promise from the resolve function. Need to make HTTP request and return the promise that it generates, in the resolve. 
+
+````js
+const RootQuery = new GraphQLObjectType({ 
+  name: 'RootQueryType', 
+  fields: {
+    user: {
+      type: UserType,
+      args: { id: { type: GraphQLString }},
+      resolve(parentValue, args) { 
+        return axios.get(`http://localhost:3030/users/${args.id}`) // now we're hosting it using json-server
+          .then(response => response.data); // just because axios nests it in a data object as well 
+      }
+    }
+  }
+});
+````
+
+because resolve returns a promise, we can use it to fetch any piece of data we can imagine
+
+#### Nodemon Hookup
+
+not graphql related, this will just enable us to automatically restart our server after a change 
+`npm install --save nodemon` and add the npm script `"dev": "nodemon server.js"`
+
+#### Company Definitions
+
+hooking up relating a company to a user
+- add companies to db.json (represents companies table)
+- add companyId to users
+- when you go to json server now, its set up relations. i.e. http://localhost:3030/companies/2/users/ now shows all the companies with id 2 that have users associated with them (i.e. a companyId of 2)
+
+---
+
+## Fetching Data with Queries 
+
+#### Nested Queries 
+
+getting the company associated with the user: 
+````js
+// important you define companyType above userType
+const CompanyType = new GraphQLObjectType({
+  name: 'Company',
+  fields: {
+    id: { type: GraphQLString },
+    name: { type: GraphQLString },
+    description: { type: GraphQLString }
+  }
+})
+
+const UserType = new GraphQLObjectType({
+  name: 'User', 
+  fields: {
+    id: { type: GraphQLString},
+    firstName: { type: GraphQLString},
+    age: { type: GraphQLInt},
+    company: { 
+      type: CompanyType, // why are we able to call this 'company' not 'companyId' ? it gets handled in resolve below.
+      resolve(parentValue, args) {
+        console.log(parentValue, args); 
+        // above parent value is the user we just fetched, it prints: { id: '23', firstName: 'Bill', age: 20, companyId: 1 }
+
+        return axios.get(`http://localhost:3030/companies/${parentValue.companyId}`)
+          .then(res => res.data);
+      } 
+    }
+  }
+});
+````
+
+to teach graphQL how to populate the 'company' field, we use the resolve function. 
+in graphiQL we can now ask it this: 
+````js
+{
+	user(id: "23") {
+    firstName,
+    company {
+			id,
+      name,
+      description
+    }
+  }
+}
+````
+and it returns info on the company id, name, description. 
+
+
+#### A Quick Breather
+
+What happens when we make a query: 
+- find me a user with ID 23 
+- query goes to Root Query with args object of id 23
+  - resolve(null, { id: 23}) (ie. parentValue null, args is id: 23)
+- root query points us now to the user with id 23
+- then the query says we want to know about company, now the user resolve's function gets called
+  - resolve(user23, {}) (ie. parentValue is the user23 object, args is empty)
+  - resolve then returns us a promise of the company we're looking for
+- the whole data structure is then returned 
+
+best to think of schema / data as a bunch of functions that return references to other objects in our graph.
+another way is to think that we're truly working with a graph. each relation would be its own resolve function, that is how they relate. 
+
+#### Multiple RootQuery Entry points 
+
+Currently we can provide a user's ID and get company info from that. But we cannot search directly for a company using the companys ID directly. 
+
+````js
+const RootQuery = new GraphQLObjectType({ 
+  name: 'RootQueryType', 
+  fields: {
+    user: {
+      type: UserType,
+      args: { id: { type: GraphQLString }},
+      resolve(parentValue, args) { 
+        return axios.get(`http://localhost:3030/users/${args.id}`)
+          .then(response => response.data);
+      }
+    },
+    company: { // we can add a company field just like we added a user
+      type: CompanyType,
+      args: { id: { type: GraphQLString }},
+      resolve(parentValue, args) {
+        return axios.get(`http://localhost:3030/companies/${args.id}`)
+          .then(response => response.data);
+      }
+    }
+  }
+});
+````
