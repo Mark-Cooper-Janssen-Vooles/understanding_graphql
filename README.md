@@ -439,3 +439,329 @@ const RootQuery = new GraphQLObjectType({
   }
 });
 ````
+
+#### Bidirectional Relations 
+
+what if we want to search a user from a company? i.e.: 
+````js
+{
+	company(id: "1") {
+			id,
+      name,
+      description,
+    	users {
+        firstName
+      }
+  }
+}
+````
+we would need to get a list of users, as one company can have many users. (but one user only one company)
+
+json server gives us this by default: http://localhost:3030/companies/${args.id}/users
+
+there is a circular dependency here because userType requires companyType and companyType requires userType - but which one do you define first?! we need to deal with 'closures' and 'closure scopes'. 
+
+````js
+const CompanyType = new GraphQLObjectType({
+  name: 'Company',
+  fields: () => ({ // wrapping fields with an arrow function turns fields object into an arrow function that returns an object, meaning function gets defined but not executed until after entire file has been read 
+    id: { type: GraphQLString },
+    name: { type: GraphQLString },
+    description: { type: GraphQLString },
+    users: {
+      type: new GraphQLList(UserType), // we need to tell graphQL that it'll be expecting a list of users
+      resolve(parentValue, args) {
+        return axios.get(`http://localhost:3030/companies/${args.id}/users`)
+          .then(res => res.data);
+      }
+    }
+  })
+})
+
+const UserType = new GraphQLObjectType({
+  name: 'User', 
+  fields: () => ({ // also wrapped this one to avoid circular dependency
+    id: { type: GraphQLString},
+    firstName: { type: GraphQLString},
+    age: { type: GraphQLInt},
+    company: { 
+      type: CompanyType,
+      resolve(parentValue, args) {
+        return axios.get(`http://localhost:3030/companies/${parentValue.companyId}`)
+          .then(res => res.data);
+      } 
+    }
+  })
+});
+````
+
+can now search grapgiQL using query: 
+````js
+{
+	company(id: "2") {
+			id,
+      name,
+      description,
+    	users {
+        id,
+        age,
+        firstName
+      }
+  }
+}
+````
+note that you can recursively request info if you wanted (but you wouldn't, i.e. asking the company on the nested users object)
+
+#### Query Fragments 
+
+sometimes you might see queries written like; (it has the same behavior)
+````js
+query {
+	company(id: "2") {
+			id,
+      name,
+      description,
+    	users {
+        firstName
+      }
+  }
+}
+````
+
+you can also name the query, which is useful when working on the frontend. You might have many queries, and you might want to reuse them.
+i.e. in this case its called 'findCompany': 
+````js
+query findCompany{
+	company(id: "2") {
+			id,
+      name,
+      description,
+    	users {
+        firstName
+      }
+  }
+}
+````
+
+the opening set of query braces, you can imagine that query is being sent to the rootQuery. Either user or company, and from there the result functions take over. 
+
+we can ask for as many things from a single query as we like: 
+````js
+{
+	company(id: "2") {
+      name,
+  }
+
+  company(id: "1") { // this won't work, as we've got two company fields. to get around this, need to name them
+      name,
+  }
+}
+````
+
+because the response key from GraphiQL is 'company', we need to name them, i.e: 
+needs this: 
+````js
+{
+	apple: company(id: "2") {
+      id,
+      name,
+      description
+  }
+
+  google: company(id: "1") { 
+      name,
+      name,
+      description
+  }
+}
+````
+
+now the result is:
+````json
+{
+  "data": {
+    "apple": {
+      "id": "2",
+      "name": "Google",
+      "description": "search"
+    },
+    "google": {
+      "name": "Apple",
+      "description": "iphone"
+    }
+  }
+}
+````
+
+The use of Query Fragments: 
+the above has id, name and description written out twice. to solve this, we can make use of query fragments. 
+a query fragment is a list of different attributes we want to get access to.
+
+````js
+{
+	apple: company(id: "2") {
+      ...companyDetails
+  }
+
+  google: company(id: "1") { 
+      ...companyDetails
+  }
+}
+
+// this is the query fragment
+fragment companyDetails on Company { // we say 'on Company' for type checking, that company has these fields
+  id
+  name
+  description
+}
+````
+
+you see fragments more commonly on the frontend 
+
+
+#### Introduction to Mutations
+
+How to use graphQL to modify the data stored on our server by using mutations 
+Delete, update, create!
+
+Mutations are notorious in graphQL for being difficult to work with 
+
+json server has the ability to be edited by RESTful conventions. i.e. if we post data to /companies, that will add some data. if we DELETE to /users/1, it can delete the user. 
+
+GraphQL Schema
+- Query <---> root Query <---> userType || CompanyType 
+- Mutation <---> mutations <---> addUser || deleteUser
+
+we'll set up mutations in a similar fashion as the existing query.
+
+
+the fields on the mutation describe the operations that the mutation is going to take:
+````js
+const mutation = new GraphQLObjectType({
+  name: 'Mutation',
+  fields: {
+    addUser: {
+      addUser: {
+        type: UserType, // the type of data we'll return from the resolve function. sometimes with a mutation the type you operate on and the type you return might not be the same. but it is for adding a user.
+        args: {
+          firstName: { type: new GraphQLNonNull(GraphQLString) }, // can't be null
+          age: { type: new GraphQLNonNull(GraphQLInt) }, // can't be null
+          companyId: { type: GraphQLString }
+        },
+        resolve(parentValue, { firstName, age }) {
+          return axios.post(`http://localhost:3030/users/`, { firstName, age }) // second arg is just axios method of sending data
+            .then(res => res.data);
+        }
+      }
+    }
+  }
+})
+
+module.exports = new GraphQLSchema({
+  query: RootQuery,
+  mutation // need to add it here too
+});
+````
+
+refresh graphiQL and you should see mutation added 
+calling a mutation has a different syntax than queries. 
+````js
+mutation { //we must add keyword 'mutation' at the front
+  addUser(firstName:"MrBean", age:35) {
+    // whenever we call a mutation, we must add curly braces and call some information coming back off of it 
+    // kinda awkward
+    id
+    firstName
+    age
+  }
+}
+````
+which returns: 
+````json
+{
+  "data": {
+    "addUser": {
+      "id": "rz70yXH", // this id is generated by json server
+      "firstName": "MrBean",
+      "age": 35
+    }
+  }
+}
+````
+
+#### Delete Mutation 
+
+adding delete mutation: 
+````js
+const mutation = new GraphQLObjectType({
+  name: 'Mutation',
+  fields: {
+    addUser: {
+      type: UserType,
+      args: {
+        firstName: { type: new GraphQLNonNull(GraphQLString) },
+        age: { type: new GraphQLNonNull(GraphQLInt) },
+        companyId: { type: GraphQLString }
+      },
+      resolve(parentValue, { firstName, age }) {
+        return axios.post(`http://localhost:3030/users/`, { firstName, age })
+          .then(res => res.data);
+      }
+    },
+    deleteUser: { // new mutation here
+      type: UserType,
+      args: {
+        id: { type: new GraphQLNonNull(GraphQLString) }
+      },
+      resolve(parentValue, { id }) {
+        return axios.delete(`http://localhost:3030/users/${id}`)
+          .then(res => res.data);
+      }
+    }
+  }
+})
+````
+and call it in graphiQL:
+````js
+mutation {
+  deleteUser(id:"41") {
+    id
+  }
+}
+````
+responds with: 
+````json
+{
+  "data": {
+    "deleteUser": {
+      "id": null
+    }
+  }
+}
+````
+graphQL failed to return the id of the user that deleted, because of how json server works. i.e. when user is deleted, json server just doesn't respond with info on the user that was deleted. 
+
+graphQL always expects to get back useful data from resolve function (awkward part of graphQL), but we can't instruct it to not expect anything back. 
+
+#### Edit Mutation
+
+````js
+// inside mutation: 
+  editUser: {
+    type: UserType,
+    args: {
+      id: { type: new GraphQLNonNull(GraphQLString) },
+      firstName: { type: GraphQLString },
+      age: { type: GraphQLInt },
+      companyId: { type: GraphQLInt }
+    },
+    resolve(parentValue, { id, firstName, age, companyId }) {
+      return axios.patch(`http://localhost:3030/users/${id}`, { firstName, age, companyId })
+        .then(res => res.data);
+    }
+  }
+````
+
+facebook famously has their entire schema in one file. 
+we can let schema file get large, but will break it up in future apps. 
+
