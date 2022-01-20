@@ -858,3 +858,18 @@ Apollo breaks up that info into two files: a "types" file and a "resolvers" file
 ---
 
 ## Clientside GraphQL
+
+in our backend: express / node / database (we just did this)
+this section is frontend: using react / apollo-client. 
+section 3 will be both. 
+
+### Starter pack walkthrough 
+
+referring to 'lyrical-graphql-master' folder
+it has client (react and js) and server (done for us - has schema file) folder. schema files are broken up.
+
+app is a 'song writing application'
+holds a bunch of songs (Song index page)
+songs hold a collection of lyrics (song detail page)
+a collaborative song-writing app
+
