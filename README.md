@@ -13,6 +13,8 @@ finished code can be found here: https://github.com/StephenGrider/GraphQLCasts
   - graphiQL tool
 - Fetching Data with Queries
 - The GraphQL Ecosystem
+  - front end libraries 
+  - back end libraries
 - Clientside GraphQL
 - Gotchas with Queries in React 
 - Frontend mutations
@@ -765,3 +767,94 @@ graphQL always expects to get back useful data from resolve function (awkward pa
 facebook famously has their entire schema in one file. 
 we can let schema file get large, but will break it up in future apps. 
 
+
+---
+
+## The GraphQL Ecosystem
+
+the goal is to get familiar with the different libraries using graphQL on the frontend 
+
+if you fire a request using graphiQL you can look in network tab and see the response, its the exact json object we get back. 
+similarly if you look at the the request payload, its an exact string of what we entered into our graphiQL website. 
+
+With all the different graphQL clients we can use, they all speak the same language over the wire (the same request and response message format)
+
+Instead of:
+- GraphiQL <---> GraphQL Query <---> Express/GraphQL Server <---> Datastore 
+We'll have:
+- React + GraphQL Client <---> GraphQL Query <---> Express / GraphQL Server <---> Datastore
+
+React and GraphQL Client will be  tightly coupled.
+The GraphQL Client will be doing exactly what GraphiQL is doing 
+
+
+
+Three big clients (frontend) in use today in javascript and graphQL world. JS clients (used inside of the browser - not backend)
+- Lokka
+  - easiest - simple as possible, basic queries / mutations. some simple caching. Similar to GraphiQL
+- Apollo Client
+  - biggest fullstack uses of graphQL, called "the apollo stack" (has a backend graphQL server, and apollo client which runs in frontend)
+  - Produced by the same guys as Meteor JS. Good balance between features and complexitiy
+- Relay
+  - Amazing performance for mobile. By far most insanely complex
+  - used by FB team
+  - very very complicated, especially when it comes to mutations. 
+
+
+***Sidenote - Apollo Server vs GraphQL server***
+
+We'll use a graphQL technology for backend as well. 
+I.e. we've been using express-graphQL so far. 
+
+GraphQL Express example: 
+````js
+// i.e. from our schema in ./users: 
+const UserType = new GraphQLObjectType({
+  name: 'User', 
+  fields: () => ({
+    id: { type: GraphQLString},
+    firstName: { type: GraphQLString},
+    age: { type: GraphQLInt},
+    company: { 
+      type: CompanyType,
+      resolve(parentValue, args) {
+        return axios.get(`http://localhost:3030/companies/${parentValue.companyId}`)
+          .then(res => res.data);
+      } 
+    }
+  })
+});
+````
+Apollo Server example:
+````js
+// types file:
+type User {
+  id: String!
+  firstName: String
+  age: Int
+  company: Company
+}
+
+type Company: {
+  id: String!
+  name: String
+  employees: [User]
+}
+
+// resolvers file:
+const resolveFunctions = {
+  Query: {
+    users() {
+      return users;
+    }
+  }
+} 
+````
+
+Neither of above are better than the other. 
+GraphQL EXpress uses one big schema file that defines the type information and the resolve logic
+Apollo breaks up that info into two files: a "types" file and a "resolvers" file 
+
+---
+
+## Clientside GraphQL
