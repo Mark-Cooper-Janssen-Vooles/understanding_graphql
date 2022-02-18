@@ -873,3 +873,189 @@ holds a bunch of songs (Song index page)
 songs hold a collection of lyrics (song detail page)
 a collaborative song-writing app
 
+Created mongoDB account: https://cloud.mongodb.com/v2/61e9e841b54aca702be9e320#clusters/connect?clusterId=graphQL-Tutorial
+created user and password (in .env file only locally) - used xero email
+
+### Working through the schema 
+
+mutations:
+- 'addSong' takes arg of title 
+- 'addLyricToSong' takes arg of content and song id 
+- 'likeLyric' takes id of lyric
+- 'deleteSong' takes song id
+
+root query:
+- 'songs' returns list of all the songs
+- 'song' returns one song, takes arg of id
+- 'lyric' returns one lyric, takes arg of id
+
+````js
+// add a song
+mutation {
+  addSong(title: "Cold Nights") {
+    id
+  }
+}
+// add a lyric to above song
+mutation {
+  addLyricToSong(
+    content:"Is so cold", 
+    songId:"61e9fabb1e41f5fe261121df"
+  ) {
+    id // returns the id of the song modified, not of the lyric added.
+  }
+}
+// query all songs and lyrics
+{
+  songs {
+    id
+		title
+    lyrics {
+			content
+    }
+  }
+}
+````
+
+you can then go to the mongoDB website and see the lyrics and songs in the db. 
+
+
+### Apollo client setup 
+
+open index.js in client folder, we've got component 'root' 
+
+we'll wrap react component in apollo client library. 
+
+Apollo provider wraps our react app <---> apollo store <---> graphQL server
+- Apollo store is what communicates with graphQL server and stores data that comes back from it. Exists on the client-side (frontend!). A repository from what comes from graphQL server. 
+- Apollo store doesn't care about what frontend framework we use (it doesnt care we're using react)
+- Integration between apollo store and our react app is the apollo provider. The provider takes data from apollo store and injects it into our react app. 
+- Most config is in the apollo provider. 
+
+ApolloClient is what interacts with our graphQL on the backend (ie. apollo store)
+
+Below is minimal setup for apollo:
+````js
+import React from 'react';
+import ReactDOM from 'react-dom';
+import ApolloClient from 'apollo-client'; 
+import { ApolloProvider } from 'react-apollo';
+
+// this assumes graphql server is on /graphql route (set in server/server.js line 25)
+// may need to add options if not
+const client = new ApolloClient({});
+
+const Root = () => {
+  return (
+    <ApolloProvider client={client}>
+      <div>lyricall</div>
+    </ApolloProvider>
+  );
+};
+
+ReactDOM.render(
+  <Root />,
+  document.querySelector('#root')
+);
+````
+
+
+#### React Component Design 
+
+A song Index page, a list of songs you can click on
+Goes to a Song Detail page, which has a LyricList, a LyricCreate (and you can like the lyrics)
+
+#### GQL Queries in React
+
+GraphQL + React Strategy: 
+1. Identify Data requried
+2. Write Query in Graph(i)QL (for practice) and in component file
+3. Bond Query + component
+4. Access Data 
+
+On "Song Index Page" all we'll need to know is the title of each song (i.e. 1)
+
+1. for the songList page, we just need the title 
+2. this provides the information we need, when used on localhost:4000/graphql (note i need to be on the VPN or mongodb says my IP isn't authenticated)
+````js 
+{
+  songs {
+    title
+  }
+}
+````
+3. the graphql search syntax is not JS, so we need to use a library: 
+````js
+import gql from 'graphql-tag'; // helps us to write queries inside of a component file
+// looks like: 
+const query = gql`
+  {
+    songs {
+      title
+    }
+  }
+`;
+
+// to bond query and component together: 
+import React from 'react';
+import gql from 'graphql-tag';
+import { graphql } from 'react-apollo';
+
+var SongList = (props) => {
+  console.log(props) //this logs out two objects, the second one has songs. first one has 'loading: true'
+
+  return (
+    <div>
+      SongList
+    </div>
+  )
+}
+
+const query = gql`
+  {
+    songs {
+      title
+    }
+  }
+`;
+
+export default graphql(query)(SongList); // works similar to redux 
+````
+
+Bondng query and component: 
+- Render component to screen (without data)
+- Query we wrote will be executed to backend server to fetch data (async process)
+- Query complete
+- Rerender component with data
+
+
+Accessing the data comes on the props.data object. It will first be loading, then in a loaded state return data. Can do something like this:
+
+````js
+var SongList = (props) => {
+  console.log(props.data);
+  const { loading, songs } = props.data;
+
+  const renderSongs = () => {
+    if (!loading) { // check for loading here
+      return songs.map(song => {
+        return (
+          <li key={song.id} className="collection-item">
+            {song.title}
+          </li>
+        )
+      })
+    }
+  }
+
+  if (loading) { // if loading still, return another element
+    return <div>Loading...</div>
+  }
+
+  return (
+    <ul className="collection">
+      {renderSongs()}
+    </ul>
+  )
+}
+````
