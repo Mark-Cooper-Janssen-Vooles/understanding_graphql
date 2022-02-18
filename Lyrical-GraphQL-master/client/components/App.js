@@ -1,6 +1,12 @@
 import React from 'react';
+import SongList from './SongList';
+import SongCreate from './SongCreate';
 
-export default ({ children }) => {
-  console.log('test')
-  return <div className="container">{children}</div>;
+export default () => {
+  return (
+    <div className='container'>
+      <SongList />
+      <SongCreate />
+    </div>
+    );
 };
