@@ -1060,3 +1060,37 @@ var SongList = (props) => {
 }
 ````
 
+===
+
+#### Query Params 
+
+How can we hook up our components form input data with the mutation / query? 
+In graphiql (localhost:4000/graphql) we can test it out too. 
+
+Think of mutation like a function - we'll pass something to it. 
+"Query variables" injects a variable from outside the query into the query (or mutation).
+
+````js
+// normally we'd call a mutation like this:
+mutation {
+  addSong(title: "Some title") {
+    id
+    title
+  }
+}
+
+// but when we want the component to pass some data from the forum: 
+
+// we've named the mutation 'addSong' (Can be anything - named for our personal use) - imagine the function is called 'addSong', and when you call it it calls the addSong mutation
+mutation AddSong($title: String) { // inside the mutation, can refer back to $title - a variable of sorts.
+  addSong(title: $title) {
+    id
+    title
+  }
+}
+
+// in graphiql, you'd need to pass this as the query variable:
+{
+	"title":"Sprite vs Coke" //we do not use the $ here
+}
+````
