@@ -1,13 +1,16 @@
 // fetching a list of songs and rendering them on the screen
-import React from 'react';
+import React, { Component } from 'react';
 import gql from 'graphql-tag';
 import { graphql } from 'react-apollo';
+import fetchSongs from '../queries/fetchSongs';
 
-var SongList = (props) => {
-  console.log(props.data);
-  const { loading, songs } = props.data;
+class SongList extends Component {
+  constructor(props) {
+    super(props);
+  }
 
-  const renderSongs = () => {
+  renderSongs() {
+    const { loading, songs } = this.props.data;
     if (!loading) {
       return songs.map(song => {
         return (
@@ -19,24 +22,16 @@ var SongList = (props) => {
     }
   }
 
-  if (loading) {
-    return <div>Loading...</div>
-  }
+  render() {
+    if (this.props.data.loading)
+      return ( <div>Loading...</div> )
 
-  return (
-    <ul className="collection">
-      {renderSongs()}
-    </ul>
-  )
+    return (
+      <ul className="collection">
+        {this.renderSongs()}
+      </ul>
+    )
+  }
 }
 
-const query = gql`
-  {
-    songs {
-      title
-      id
-    }
-  }
-`;
-
-export default graphql(query)(SongList);
+export default graphql(fetchSongs)(SongList);

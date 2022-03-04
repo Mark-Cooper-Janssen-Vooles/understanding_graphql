@@ -1,5 +1,8 @@
 import React, { Component } from 'react';
+import { graphql } from 'react-apollo';
 import gql from 'graphql-tag';
+import fetchSongs from '../queries/fetchSongs';
+
 
 class SongCreate extends Component {
   constructor(props) {
@@ -11,7 +14,13 @@ class SongCreate extends Component {
   onSubmit(event) {
     event.preventDefault();
 
-    
+    this.props.mutate({
+      variables: { title: this.state.title },
+      refetchQueries: [{ query: fetchSongs }]
+    })
+
+    this.props.handleRerenderChange();
+    this.setState({title: ''})
   }
 
   render() {
@@ -30,7 +39,7 @@ class SongCreate extends Component {
   }
 }
 
-// to communicate the data from the components form to the mutation?
+// to communicate the data from the components form to the mutation
 const mutation = gql`
   mutation AddSong($title: String){
     addSong(title: $title) {
@@ -39,4 +48,4 @@ const mutation = gql`
   }
 `;
 
-export default SongCreate;
+export default graphql(mutation)(SongCreate);

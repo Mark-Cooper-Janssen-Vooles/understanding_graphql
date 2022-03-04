@@ -1094,3 +1094,59 @@ mutation AddSong($title: String) { // inside the mutation, can refer back to $ti
 	"title":"Sprite vs Coke" //we do not use the $ here
 }
 ````
+
+#### Defining Query Variables in React 
+
+````js
+import { graphql } from 'react-apollo'; // first import this
+
+export default graphql(mutation)(SongCreate); // connect the component to graphql and the mutation 
+
+// we now have access in the state to 'this.props.mutate' 
+// we pass mutate an object with the variables we want to send
+onSubmit(event) {
+  event.preventDefault();
+
+  this.props.mutate({
+    variables: {
+      title: this.state.title
+    }
+  }).then(() => ) // we can also add a .then if we want, to do something if its successful. i.e. to navigate on successful submission (what he does)
+    .catch(() => ) // or a .catch if it fails, i.e. if we want to handle validation errors
+}
+
+````
+
+
+#### Troubleshooting list fetching 
+
+
+cold cache: create song => run query => songs fetched 
+warm cache: fetch songs => songs 2,3,4 fetched =>create song 5 => already fetched query, no need to fetch again => render songs 2,3,4
+
+warm cache needs to re-fetch! 
+
+To do this:
+=> In songList.js we have our initial list-fetching query written using the gql`` syntax. We will export this into its own file inside a src/queries folder and hook it back up again, calling it 'fetchSongs'
+=> in songCreate.js: 
+
+````js
+  onSubmit(event) {
+    event.preventDefault();
+
+    this.props.mutate({
+      variables: { title: this.state.title },
+      refetchQueries: [{ query: fetchSongs }] // once we mutate, we now use the refetchQueries object and pass it the query we exported above 'fetchSongs'. We can also pass variables here like above, if the query needs them. i.e.: 
+      // [{ query: fetch songs, variables: { someVariable: this.state.someVariable }}]
+      // and we can also refetch multiple queries.
+    })
+
+    this.setState({title: ''})
+  }
+````
+
+the big reminder: Whenever we insert an item using a mutation into a list of data, we might have to re-fetch the data that list is associated with. 
+
+
+#### Deletion by Mutation
+
