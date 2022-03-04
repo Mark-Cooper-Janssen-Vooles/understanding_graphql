@@ -1,23 +1,27 @@
 import React, { Component } from 'react';
 import SongList from './SongList';
 import SongCreate from './SongCreate';
+import SongDetail from './SongDetail';
 
 export default class App extends Component {
   constructor(props) {
     super(props);
-    this.handleRerenderChange = this.handleRerenderChange.bind(this);
-    this.state = { toggleToRerender: false };
+    this.handleRerenderChange = this.updateActiveSong.bind(this);
+    this.state = { 
+      activeSong: {}
+     };
   }
 
-  handleRerenderChange() {
-    this.setState({ toggleToRerender: !this.state.toggleToRerender})
+  updateActiveSong(songDetail) {
+    this.setState({ activeSong: { songDetail }})
   }
 
   render() {
     return (
       <div className='container'>
-        <SongCreate handleRerenderChange={this.handleRerenderChange} />
-        <SongList handleRerenderChange={this.handleRerenderChange} />
+        <SongCreate />
+        <SongList />
+        <SongDetail updateActiveSong={this.updateActiveSong} id={"62215a286523a70d0acb15ad"} />
       </div>
       );
   }

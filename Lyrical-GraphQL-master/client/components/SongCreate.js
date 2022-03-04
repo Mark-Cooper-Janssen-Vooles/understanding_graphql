@@ -19,7 +19,6 @@ class SongCreate extends Component {
       refetchQueries: [{ query: fetchSongs }]
     })
 
-    this.props.handleRerenderChange();
     this.setState({title: ''})
   }
 

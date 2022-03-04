@@ -1147,6 +1147,62 @@ To do this:
 
 the big reminder: Whenever we insert an item using a mutation into a list of data, we might have to re-fetch the data that list is associated with. 
 
+Re-loading a component does not equal refetching from graphql! 
+
 
 #### Deletion by Mutation
+
+````js
+// in songList, 
+const mutation = gql`
+  mutation DeleteSong($id: ID) {
+    deleteSong(id: $id) {
+      id
+    }
+  }
+`;
+
+// however we've already got: 
+export default graphql(fetchSongs)(SongList);
+
+// how can we have two associated queries / mutations to the one component, SongList? 
+// (for this version of graphql), need to call it twice:
+export default graphql(mutation)(
+  graphql(fetchSongs)(SongList)
+);
+````
+
+#### Alternate approach for refetching data 
+
+````js
+// in songList.js
+onSongDelete(id) {
+  this.props.mutate({ variables: { id } })
+  .then(() => this.props.data.refetch());
+}
+````
+
+we couldn't use this previously in songCreate.js - because the query for songList was not associated with the songCreate component, it was associated with songList.js (i.e. it was called in songList) - it has no idea that the query exists. 
+
+#### Fetching Individual Records
+
+````js
+query findSong($id: ID!) { // the ! means the argument must be provided
+  song(id: $id) {
+    title
+  }
+}
+````
+
+when trying to connect this with a component, it differs as it has a required field (id) and queries are executed automatically, unlike the mutation above which was execuded manually, i.e. on click (so we could easily pass it a variable). 
+
+When you connect it, it needs to look something like this: 
+
+````js
+
+export default graphql(query, {
+  options: (props) => { return { variables: { id: props.id }}} // whatever is on the props can be used here
+})(SongDetail);
+
+````
 
