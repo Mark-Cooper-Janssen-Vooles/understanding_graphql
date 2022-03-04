@@ -6,22 +6,23 @@ import SongDetail from './SongDetail';
 export default class App extends Component {
   constructor(props) {
     super(props);
-    this.handleRerenderChange = this.updateActiveSong.bind(this);
+    this.updateActiveSong = this.updateActiveSong.bind(this);
     this.state = { 
       activeSong: {}
      };
   }
 
   updateActiveSong(songDetail) {
-    this.setState({ activeSong: { songDetail }})
+    this.setState({ activeSong: songDetail })
   }
 
   render() {
+    // console.log(this.state.activeSong)
     return (
       <div className='container'>
         <SongCreate />
-        <SongList />
-        <SongDetail updateActiveSong={this.updateActiveSong} id={"62215a286523a70d0acb15ad"} />
+        <SongList  updateActiveSong={this.updateActiveSong} />
+        { this.state.activeSong.id !== undefined && <SongDetail id={this.state.activeSong.id} /> }
       </div>
       );
   }

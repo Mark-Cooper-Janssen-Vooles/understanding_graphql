@@ -15,12 +15,14 @@ class SongList extends Component {
   }
 
   renderSongs() {
+    console.log(this.props);
+
     const { loading, songs } = this.props.data;
     if (!loading) {
       return songs.map(({id, title}) => {
         return (
           <li key={id} className="collection-item">
-            {title}
+            <div onClick={() => this.props.updateActiveSong({ id, title })}>{title}</div>
             <i className="material-icons" onClick={() => this.onSongDelete(id)}>delete</i>
           </li>
         )

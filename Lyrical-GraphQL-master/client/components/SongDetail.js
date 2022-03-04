@@ -4,12 +4,18 @@ import { graphql } from 'react-apollo';
 
 class SongDetail extends Component {
   render() {
-    console.log(this.props.data);
-    return (
-      <div>
-        <h3>Song Detail</h3>
-      </div>
-    )
+    if (this.props.data.song != undefined) {
+      console.log(this.props.data.song);
+      const { title } = this.props.data.song;
+
+      return (
+        <div>
+          <h3>{title}</h3>
+        </div>
+      )
+    }
+
+    return (<div></div>)
   }
 }
 
