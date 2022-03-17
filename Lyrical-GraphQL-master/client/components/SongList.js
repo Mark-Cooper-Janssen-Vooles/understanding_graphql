@@ -22,7 +22,7 @@ class SongList extends Component {
       return songs.map(({id, title}) => {
         return (
           <li key={id} className="collection-item">
-            <div onClick={() => this.props.updateActiveSong({ id, title })}>{title}</div>
+            <div className="pointer" onClick={() => this.props.updateActiveSong({ id, title })}>{title}</div>
             <i className="material-icons" onClick={() => this.onSongDelete(id)}>delete</i>
           </li>
         )

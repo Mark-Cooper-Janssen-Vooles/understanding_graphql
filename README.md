@@ -1206,3 +1206,31 @@ export default graphql(query, {
 
 ````
 
+===
+
+#### The createLyric Mutation
+
+````js
+const mutation = gql`
+  mutation AddLyricToSong($content:String, $songId: ID) {
+    addLyricToSong(content:$content, songId:$songId) {
+      id
+      lyrics {
+        content
+      }
+    }
+  }
+`;
+````
+
+===
+
+#### Enhancing queries 
+
+We have SongDetail which has a graphql query which gives us the id and the title. 
+We have also now added the LyricList component which is a child of SongDetail, and it requires a list of lyrics associated with the song. 
+
+Graphql is good here - we don't have to go and create another query for LyricList, we can simply enhance the query in SongDetail to also return lyrics and pass them down to SongDetail. Using a standard API we'd have to go into the backend and make changes to get this same functionality. 
+
+
+
