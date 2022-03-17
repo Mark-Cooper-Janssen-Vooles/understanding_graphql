@@ -15,8 +15,6 @@ class SongList extends Component {
   }
 
   renderSongs() {
-    console.log(this.props);
-
     const { loading, songs } = this.props.data;
     if (!loading) {
       return songs.map(({id, title}) => {

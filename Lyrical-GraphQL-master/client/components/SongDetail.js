@@ -3,35 +3,23 @@ import gql from 'graphql-tag';
 import { graphql } from 'react-apollo';
 import LyricCreate from './LyricCreate';
 import LyricList from './LyricList';
+import findSong from '../queries/findSong';
 
 class SongDetail extends Component {
   render() {
-    const { song, lyrics } = this.props.data;
+    const { song } = this.props.data;
     if (!song) { return <div>Loading...</div>}
 
     return (
       <div>
         <h3>{song.title}</h3>
-        <LyricList lyrics={lyrics} />
+        <LyricList lyrics={song.lyrics} />
         <LyricCreate song={song} />
       </div>
     )
   }
 }
 
-const query = gql`
-query findSong($id: ID!) {
-  song(id: $id) {
-    id
-    title
-    lyrics {
-      id
-      content
-    }
-  }
-}
-`;
-
-export default graphql(query, {
+export default graphql(findSong, {
   options: (props) => { return { variables: { id: props.id }}}
 })(SongDetail);

@@ -1232,5 +1232,47 @@ We have also now added the LyricList component which is a child of SongDetail, a
 
 Graphql is good here - we don't have to go and create another query for LyricList, we can simply enhance the query in SongDetail to also return lyrics and pass them down to SongDetail. Using a standard API we'd have to go into the backend and make changes to get this same functionality. 
 
+===
 
+#### Identifying Records 
 
+When we submit a lyric the list of lyrics is not refreshing by default. 
+We can (apparently) get this working using the old technique. 
+
+How is apollo storing data internally? 
+Apollo Store (or apollo client, created in index.js) has internal buckets of data => internal list of songs and list of lyrics. 
+It knows how to go and fetch data from our graphql server, and then stores the data into one of these buckets. 
+
+Apollo store knows which bucket to place the data in because it knows what type they are. i.e. "__typename: "LyricType" can be seen in network tab. 
+
+Shortcoming: Apollo has no idea about what data / properties exist inside of Songs and Lyrics. It can see that theres 4 lyrics coming back, but only renders 3. Because it doesn't know what properties exist inside the Song (in this case, the lyrics array)
+
+To fix this issue you can configure the apollo client. One way is to give it the id. It will allow apollo to bond with the react components much more easily. 
+
+We want: 
+Fetch list of lyrics => Create a new lyric => refetch entire song + lyrics => apollo sees song 5 updated => apollo rerenders components 
+
+````js
+// original code: 
+const client = new ApolloClient({});
+
+// new: 
+const client = new ApolloClient({
+  dataIdFromObject: o => o.id
+});
+
+// this takes every piece of data fetched by apollo-client from the backend, and runs it through this function.
+// whatever is returned from this function is used to identify that piece of data inside of the apollo client/store. 
+````
+
+Ramifications of doing this: 
+When we use the id off of every record, whenever we make a query, we have to make sure we ask for the id of every record of every query we put together. 
+
+When you use the refetch queries technique, i.e.: 
+````js
+    this.props.mutate({
+      variables: { title: this.state.title },
+      refetchQueries: [{ query: fetchSongs }]
+    })
+````
+we actually do the mutation and then to the fetch query, so it does two requests. When we use the dataIdFromObject caching system, only a single request is needed.

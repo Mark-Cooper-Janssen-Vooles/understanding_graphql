@@ -16,8 +16,9 @@ class LyricCreate extends Component {
       variables: {
         content: this.state.content,
         songId: this.props.song.id
-      }
-    }).then(() => this.setState({ content: ''})); //only clears when graphql is successful
+      },
+    })
+    .then(() => this.setState({ content: ''}))
   }
 
   render() {
@@ -38,6 +39,7 @@ const mutation = gql`
     addLyricToSong(content:$content, songId:$songId) {
       id
       lyrics {
+        id
         content
       }
     }
