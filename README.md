@@ -21,7 +21,7 @@ finished code can be found here: https://github.com/StephenGrider/GraphQLCasts
 - Automatic Data Caching
 - React Router + GraphQL
 - More on Client side Mutations
-- Building from (Mostly) scratch
+- Building from (Mostly) scratch (haven't done this or below yet)
 - Moving Client side 
 - Handling Errors Gracefully
 - Extras
@@ -1060,8 +1060,6 @@ var SongList = (props) => {
 }
 ````
 
-===
-
 #### Query Params 
 
 How can we hook up our components form input data with the mutation / query? 
@@ -1276,3 +1274,77 @@ When you use the refetch queries technique, i.e.:
     })
 ````
 we actually do the mutation and then to the fetch query, so it does two requests. When we use the dataIdFromObject caching system, only a single request is needed.
+
+
+====
+
+#### The Like Mutation 
+
+
+Every time you run this mutation it just increments the number of likes. (graphql docs say this, its set this way in the server)
+````js
+mutation LikeLYric($id: ID) { // $id is the name of the variable being passed as a query variable, ID is the type 
+  likeLyric(id: $id) { // id is the name of the variable, $id is the value being passed.
+    id
+    likes
+  }
+} 
+````
+
+Steps: 
+1. define mutation (or query) in browser, graphiql, to confirm working: http://localhost:4000/graphql
+2. use gql syntax and write query in the component its used in 
+````js
+  const mutation = gql`
+    mutation LikeLyric($id: ID) {
+      likeLyric(id: $id) {
+        id
+        likes
+      }
+    } 
+  `;
+````
+3. connect it to graphql at the default export 
+````js
+export default graphlql(mutation)(LyricList);
+````
+4. call the mutation in the code:
+````js
+  onLike(id) {
+    this.props.mutate({
+      variables: { id }, 
+    })
+  }
+````
+
+===
+
+
+#### Optimistic UI Updates 
+
+When you hit the like button, there is a brief moment before the UI updates an increments the likes. This is because it needs to get the data back from the request again. 
+
+To make this instant, apollo has support for this out of the box with a system it calls "optimisic updates" or "optimistic responses" 
+
+Call mutation => Guess at response => UI updates => .... waiting a moment => response comes back => UI updates
+
+In this case, once a lyric is liked, we expect to see an object returned like: { id: "23234", likes: 5, __typename: "LyricType" }, where the likes is the existing likes +1. It should be the only thing changed. So we can guess at the response. 
+
+````js
+  onLike(id, likes) {
+    this.props.mutate({
+      variables: { id }, 
+      optimisticResponse: {
+        __typename: 'Mutation',
+        likeLyric: {
+          id: id,
+          __typename: 'LyricType',
+          likes: likes + 1 // this is the optimisic part.
+        }
+      }
+    })
+  }
+````
+
+if the guess at response is wrong, then there will be a small delay (where the guess appears) shortly overwritten by the actual happenings. I.e. if your optimisticResponse is "likes + 10" and you click on something which has 5 likes: it will first become 15, then as the actual response comes in it will change to 6. 
+
